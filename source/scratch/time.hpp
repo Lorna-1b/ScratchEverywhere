@@ -3,6 +3,8 @@ typedef uint16_t u16;
 
 class Time {
   public:
+    Time() = delete;
+
     static int getHours();
 
     static int getMinutes();
