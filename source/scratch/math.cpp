@@ -44,7 +44,7 @@ std::optional<double> Math::parseNumber(std::string_view str) {
 
     // Scratch has hex/binary/octal support with prefix
     int base = 10;
-    if (str[0] == '0' && str.size() >= 2) {
+    if (str[0] == '0' && str.size() != 1) {
         char prefix = str[1];
         if (prefix == 'x' || prefix == 'X') {
             base = 16;
@@ -66,19 +66,17 @@ std::optional<double> Math::parseNumber(std::string_view str) {
     if (base == 10) {
         size_t i = 0;
 
-        if (str == "Infinity") {
-            return std::numeric_limits<double>::infinity();
-        }
-
         bool negative = false;
-        if (i < str.size() && (str[i] == '+' || str[i] == '-')) {
+        if (str[i] == '+' || str[i] == '-') {
             negative = (str[i] == '-');
-            i++;
-            if (i == str.size()) return std::nullopt;
+            str.remove_prefix(1);
+            if (str.empty()) return std::nullopt;
         }
 
-        // "+Infinity" or "-Infinity" invalid
-        if (str == "Infinity") return std::nullopt;
+        if (str == "Infinity") {
+            return negative ? -std::numeric_limits<double>::infinity()
+                            : std::numeric_limits<double>::infinity();
+        }
 
         // Integer part
         double value = 0.0;
@@ -135,10 +133,9 @@ std::optional<double> Math::parseNumber(std::string_view str) {
 
         // Apply exponent safely
         if (exponent != 0) {
-            errno = 0;
             double scale = std::pow(10.0, (double)exponent);
 
-            if (errno == ERANGE || !std::isfinite(scale)) {
+            if (!std::isfinite(scale)) {
                 return negative ? -std::numeric_limits<double>::infinity()
                                 : std::numeric_limits<double>::infinity();
             }
@@ -185,8 +182,7 @@ std::optional<double> Math::parseNumber(std::string_view str) {
 }
 
 bool Math::isNumber(const std::string_view str) {
-    auto result = parseNumber(str);
-    return result ? true : false
+    return parseNumber(str).has_value();
 }
 
 double Math::degreesToRadians(double degrees) {
